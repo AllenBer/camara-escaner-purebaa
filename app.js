@@ -59,14 +59,21 @@ scanButton.addEventListener('click', () => {
 const guardarRecorteButton = document.getElementById('guardarRecorte');
 
 guardarRecorteButton.addEventListener('click', () => {
-  const croppedCanvas = cropper.getCroppedCanvas();
+  // Obtener el recorte con resolución alta (HD)
+  const croppedCanvas = cropper.getCroppedCanvas({
+    width: 1280,
+    height: 720
+  });
 
-  // Reemplazamos el canvas global con el recorte
+  // Ajustar el canvas principal a tamaño del recorte
   canvas.width = croppedCanvas.width;
   canvas.height = croppedCanvas.height;
-  
+
   const ctx = canvas.getContext('2d');
   ctx.drawImage(croppedCanvas, 0, 0);
+
+  // Actualizar vista previa
+  snapshot.src = canvas.toDataURL('image/png');
 
   // Opcional: actualizamos vista previa también
   snapshot.src = canvas.toDataURL('image/png');
