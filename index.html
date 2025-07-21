@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Mini Escáner Web</title>
+  <link href="https://unpkg.com/cropperjs/dist/cropper.min.css" rel="stylesheet"/>
+  <style>
+    body { font-family: sans-serif; text-align: center; }
+    video, canvas, img { max-width: 90%; margin: 10px auto; display: block; }
+    button { margin: 5px; padding: 10px; font-size: 16px; }
+  </style>
+</head>
+<body>
+
+  <h1>📷 Escáner Web</h1>
+
+  <!-- Cámara -->
+  <video id="video" width="300" autoplay></video><br>
+  <button id="capture">📸 Tomar Foto</button>
+
+  <!-- Imagen Capturada -->
+  <canvas id="canvas" style="display: none;"></canvas>
+  <img id="photo" style="max-width: 100%; display:none;" />
+
+  <!-- Recorte -->
+  <button id="crop" style="display:none;">✂️ Recortar</button>
+  <button id="scanEffect" style="display:none;">🖨️ Efecto Escáner</button>
+  <button id="download" style="display:none;">⬇️ Descargar JPG</button>
+
+  <!-- Librerías -->
+  <script src="https://unpkg.com/cropperjs"></script>
+  <script async src="https://docs.opencv.org/4.x/opencv.js" onload="cvLoaded()"></script>
+
+  <script>
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const photo = document.getElementById('photo');
+    const captureBtn = document.getElementById('capture');
+    const cropBtn = document.getElementById('crop');
+    const scanBtn = document.getElementById('scanEffect');
+    const downloadBtn = document.getElementById('download');
+
+    let cropper;
+
+    // Iniciar cámara
+    navigator.mediaDevices.getUserMedia({ video: true }).then(stream => {
+      video.srcObject = stream;
+    });
+
+    // Tomar foto
+    captureBtn.onclick = () => {
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(video, 0, 0);
+      const dataURL = canvas.toDataURL('image/png');
+      photo.src = dataURL;
+      photo.style.display = 'block';
+      cropBtn.style.display = 'inline-block';
+      scanBtn.style.display = 'none';
+      downloadBtn.style.display = 'none';
+      if (cropper) cropper.destroy();
+      cropper = new Cropper(photo, {
+        aspectRatio: NaN,
+        viewMode: 1,
+      });
+    };
+
+    // Recortar
+    cropBtn.onclick = () => {
+      const canvasCrop = cropper.getCroppedCanvas();
+      photo.src = canvasCrop.toDataURL();
+      cropper.destroy();
+      cropBtn.style.display = 'none';
+      scanBtn.style.display = 'inline-block';
+      downloadBtn.style.display = 'inline-block';
+    };
+
+    // Aplicar efecto escáner (OpenCV)
+    function cvLoaded() {
+      scanBtn.onclick = () => {
+        let src = cv.imread(photo);
+        let dst = new cv.Mat();
+        cv.cvtColor(src, dst, cv.COLOR_RGBA2GRAY, 0);
+        cv.adaptiveThreshold(dst, dst, 255, cv.ADAPTIVE_THRESH_MEAN_C, cv.THRESH_BINARY, 15, 10);
+        cv.imshow(photo, dst);
+        src.delete(); dst.delete();
+      };
+    }
+
+    // Descargar imagen
+    downloadBtn.onclick = () => {
+      const a = document.createElement('a');
+      a.href = photo.src;
+      a.download = 'escaneado.jpg';
+      a.click();
+    };
+  </script>
+</body>
+</html>
