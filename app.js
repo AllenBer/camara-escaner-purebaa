@@ -71,3 +71,13 @@ guardarRecorteButton.addEventListener('click', () => {
   // Opcional: actualizamos vista previa también
   snapshot.src = canvas.toDataURL('image/png');
 });
+navigator.mediaDevices.getUserMedia({
+  video: { facingMode: { ideal: "environment" } }, // Solicita cámara trasera
+  audio: false
+})
+.then(stream => {
+  video.srcObject = stream;
+})
+.catch(err => {
+  console.error("Error al acceder a la cámara:", err);
+});
