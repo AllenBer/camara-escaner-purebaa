@@ -57,27 +57,30 @@
   });
 });
 
-// Tomar foto desde cámara y mostrar en la imagen <img>
 captureBtn.onclick = () => {
-  // Capturar imagen desde el video y renderizar en canvas
+  // Captura la imagen del video al canvas
   canvas.width = video.videoWidth;
   canvas.height = video.videoHeight;
   const ctx = canvas.getContext('2d');
   ctx.drawImage(video, 0, 0);
-  
-  // Convertir a base64
+
   const dataURL = canvas.toDataURL('image/png');
 
-  // Mostrar imagen capturada en <img>
-  photo.src = dataURL;
+  // Asignar la imagen al <img id="photo">
   photo.style.display = 'block';
+  photo.src = dataURL;
+
   cropBtn.style.display = 'inline-block';
   scanBtn.style.display = 'none';
   downloadBtn.style.display = 'none';
 
-  // Esperar que la imagen se cargue completamente antes de usar Cropper
+  // Esperar a que la imagen se cargue completamente antes de usar Cropper
   photo.onload = () => {
-    if (cropper) cropper.destroy(); // Si ya existía, eliminar el anterior
+    if (cropper) {
+      cropper.destroy();
+      cropper = null;
+    }
+
     cropper = new Cropper(photo, {
       aspectRatio: NaN,
       viewMode: 1,
@@ -85,8 +88,8 @@ captureBtn.onclick = () => {
   };
 };
 
-    // Recortar
-    cropBtn.onclick = () => {
+
+   cropBtn.onclick = () => {
   if (!cropper) {
     alert("⚠️ No se ha inicializado el recorte.");
     return;
@@ -95,9 +98,11 @@ captureBtn.onclick = () => {
   const canvasCrop = cropper.getCroppedCanvas();
 
   if (canvasCrop) {
-    photo.src = canvasCrop.toDataURL();
+    const croppedDataUrl = canvasCrop.toDataURL('image/png');
+    photo.src = croppedDataUrl;
     cropper.destroy();
     cropper = null;
+
     cropBtn.style.display = 'none';
     scanBtn.style.display = 'inline-block';
     downloadBtn.style.display = 'inline-block';
@@ -105,6 +110,7 @@ captureBtn.onclick = () => {
     alert("⚠️ No se pudo obtener la imagen recortada.");
   }
 };
+
 
 
     // Aplicar efecto escáner (OpenCV)
@@ -127,5 +133,8 @@ captureBtn.onclick = () => {
       a.click();
     };
   </script>
+
+  <script src="https://unpkg.com/cropperjs"></script>
+
 </body>
 </html>
