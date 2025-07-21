@@ -8,32 +8,53 @@
   <!-- Cropper.js CSS -->
   <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" rel="stylesheet">
   <style>
-    img, video {
-      max-width: 100%;
-    }
-    #editableImage {
-      margin-top: 10px;
-      border: 1px solid #ccc;
-    }
-  </style>
+  img, video {
+    max-width: 100%;
+  }
+
+  button {
+    background-color: #0066cc;
+    color: white;
+    border: none;
+    padding: 10px 16px;
+    margin: 10px 5px;
+    font-size: 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+
+  button:hover {
+    background-color: #0052a3;
+  }
+
+  #editableImage {
+    margin-top: 10px;
+    border: 1px solid #ccc;
+  }
+
+  #snapshot {
+    margin-top: 10px;
+    max-width: 100%;
+    border: 1px solid #333;
+  }
+</style>
 </head>
 <body>
   <h2>📸 Escanear Documento desde la Cámara</h2>
 
-  <!-- Vista previa de la cámara -->
-  <video id="video" width="320" height="240" autoplay></video>
+  <!-- Vista previa de la cámara trasera -->
+  <video id="video" width="1280" height="720" autoplay></video>
   <button id="capture">Tomar Foto</button>
 
-  <!-- Imagen recortable -->
+  <!-- Imagen capturada para recorte -->
   <img id="editableImage" alt="Imagen capturada" />
+
   <button id="guardarRecorte">Guardar Imagen Recortada</button>
-
-
-  <!-- Botón para aplicar filtro tipo escáner -->
   <button id="scanImage">Aplicar Escaneo</button>
 
-  <!-- Canvas y snapshot finales -->
-  <canvas id="canvas" width="320" height="240" style="display:none;"></canvas>
+  <!-- Canvas oculto HD y vista final -->
+  <canvas id="canvas" width="1280" height="720" style="display:none;"></canvas>
   <img id="snapshot" alt="Imagen escaneada" />
 
   <!-- Scripts -->
