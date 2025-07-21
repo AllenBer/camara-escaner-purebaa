@@ -11,6 +11,7 @@
   </style>
 </head>
 <body>
+<img id="photo" style="max-width: 100%; display:none;" />
 
   <h1>📷 Escáner Web</h1>
 
@@ -29,107 +30,112 @@
 
   <!-- Librerías -->
   <script src="https://unpkg.com/cropperjs"></script>
-  <script async src="https://docs.opencv.org/4.x/opencv.js" onload="cvLoaded()"></script>
+<script async src="https://docs.opencv.org/4.x/opencv.js" onload="cvLoaded()"></script>
 
-  <script>
-    const video = document.getElementById('video');
-    const canvas = document.getElementById('canvas');
-    const photo = document.getElementById('photo');
-    const captureBtn = document.getElementById('capture');
-    const cropBtn = document.getElementById('crop');
-    const scanBtn = document.getElementById('scanEffect');
-    const downloadBtn = document.getElementById('download');
+<script>
+  const video = document.getElementById('video');
+  const canvas = document.getElementById('canvas');
+  const photo = document.getElementById('photo');
+  const captureBtn = document.getElementById('capture');
+  const cropBtn = document.getElementById('crop');
+  const scanBtn = document.getElementById('scanEffect');
+  const downloadBtn = document.getElementById('download');
 
-    let cropper;
+  let cropper = null;
 
-    // Iniciar cámara (trasera preferida)
-    navigator.mediaDevices.getUserMedia({
-      video: { facingMode: { exact: "environment" } }
-    })
-    .then(stream => {
+  // Iniciar cámara trasera si es posible
+  navigator.mediaDevices.getUserMedia({
+    video: { facingMode: { exact: "environment" } }
+  })
+  .then(stream => {
+    video.srcObject = stream;
+  })
+  .catch(err => {
+    console.warn("No se pudo usar la cámara trasera. Usando cámara frontal.", err);
+    navigator.mediaDevices.getUserMedia({ video: true }).then(stream => {
       video.srcObject = stream;
-    })
-    .catch(err => {
-      console.warn("No se pudo usar la cámara trasera. Usando cámara frontal.", err);
-      navigator.mediaDevices.getUserMedia({ video: true }).then(stream => {
-        video.srcObject = stream;
-      });
     });
+  });
 
-    // Tomar foto
-    captureBtn.onclick = () => {
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(video, 0, 0);
-      const dataURL = canvas.toDataURL('image/png');
+  // Tomar foto
+  captureBtn.onclick = () => {
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(video, 0, 0);
 
-      // Mostrar botones
-      photo.style.display = 'block';
-      cropBtn.style.display = 'inline-block';
-      scanBtn.style.display = 'none';
-      downloadBtn.style.display = 'none';
+    const dataURL = canvas.toDataURL('image/png');
+    photo.src = ""; // Limpiar antes de cambiar
+    photo.style.display = "none";
+    cropBtn.style.display = "none";
+    scanBtn.style.display = "none";
+    downloadBtn.style.display = "none";
 
-      // Usar imagen temporal para forzar carga
-      const tempImage = new Image();
-      tempImage.onload = () => {
-        photo.src = dataURL;
-        photo.onload = () => {
-          if (cropper) {
-            cropper.destroy();
-            cropper = null;
-          }
-          cropper = new Cropper(photo, {
-            aspectRatio: NaN,
-            viewMode: 1,
-          });
-        };
+    if (cropper) {
+      cropper.destroy();
+      cropper = null;
+    }
+
+    // Esperar a que cargue la imagen
+    setTimeout(() => {
+      photo.src = dataURL;
+      photo.onload = () => {
+        photo.style.display = "block";
+        cropper = new Cropper(photo, {
+          aspectRatio: NaN,
+          viewMode: 1,
+        });
+        cropBtn.style.display = "inline-block";
       };
-      tempImage.src = dataURL;
-    };
+    }, 100); // Pequeña espera para asegurar el cambio de src
+  };
 
-    // Recortar imagen
-    cropBtn.onclick = () => {
-      if (!cropper) {
-        alert("⚠️ No se ha inicializado el recorte.");
-        return;
-      }
+  // Recortar imagen
+  cropBtn.onclick = () => {
+    if (!cropper) {
+      alert("⚠️ No se ha inicializado el recorte.");
+      return;
+    }
 
-      const canvasCrop = cropper.getCroppedCanvas();
-      if (canvasCrop) {
-        const croppedDataUrl = canvasCrop.toDataURL('image/png');
-        photo.src = croppedDataUrl;
+    const canvasCrop = cropper.getCroppedCanvas();
+
+    if (canvasCrop) {
+      const croppedDataUrl = canvasCrop.toDataURL('image/png');
+      photo.src = croppedDataUrl;
+      photo.onload = () => {
         cropper.destroy();
         cropper = null;
 
         cropBtn.style.display = 'none';
         scanBtn.style.display = 'inline-block';
         downloadBtn.style.display = 'inline-block';
-      } else {
-        alert("⚠️ No se pudo obtener la imagen recortada.");
-      }
-    };
-
-    // Aplicar efecto escáner (blanco y negro, tipo documento)
-    function cvLoaded() {
-      scanBtn.onclick = () => {
-        let src = cv.imread(photo);
-        let dst = new cv.Mat();
-        cv.cvtColor(src, dst, cv.COLOR_RGBA2GRAY, 0);
-        cv.adaptiveThreshold(dst, dst, 255, cv.ADAPTIVE_THRESH_MEAN_C, cv.THRESH_BINARY, 15, 10);
-        cv.imshow(photo, dst);
-        src.delete(); dst.delete();
       };
+    } else {
+      alert("⚠️ No se pudo obtener la imagen recortada.");
     }
+  };
 
-    // Descargar imagen escaneada
-    downloadBtn.onclick = () => {
-      const a = document.createElement('a');
-      a.href = photo.src;
-      a.download = 'escaneado.jpg';
-      a.click();
+  // Efecto escáner (OpenCV)
+  function cvLoaded() {
+    scanBtn.onclick = () => {
+      let src = cv.imread(photo);
+      let dst = new cv.Mat();
+      cv.cvtColor(src, dst, cv.COLOR_RGBA2GRAY, 0);
+      cv.adaptiveThreshold(dst, dst, 255, cv.ADAPTIVE_THRESH_MEAN_C, cv.THRESH_BINARY, 15, 10);
+      cv.imshow(photo, dst);
+      src.delete(); dst.delete();
     };
-  </script>
+  }
+
+  // Descargar imagen
+  downloadBtn.onclick = () => {
+    const a = document.createElement('a');
+    a.href = photo.src;
+    a.download = 'escaneado.jpg';
+    a.click();
+  };
+</script>
+
 
 </body>
 </html>
