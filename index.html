@@ -43,9 +43,20 @@
     let cropper;
 
     // Iniciar cámara
-    navigator.mediaDevices.getUserMedia({ video: true }).then(stream => {
-      video.srcObject = stream;
-    });
+    navigator.mediaDevices.getUserMedia({
+  video: { facingMode: { exact: "environment" } }
+})
+.then(stream => {
+  video.srcObject = stream;
+})
+.catch(err => {
+  console.error("No se pudo acceder a la cámara trasera, usando frontal como respaldo", err);
+  // Respaldo a cámara frontal
+  navigator.mediaDevices.getUserMedia({ video: true }).then(stream => {
+    video.srcObject = stream;
+  });
+});
+
 
     // Tomar foto
     captureBtn.onclick = () => {
