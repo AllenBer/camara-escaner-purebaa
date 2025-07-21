@@ -57,35 +57,55 @@
   });
 });
 
+// Tomar foto desde cámara y mostrar en la imagen <img>
+captureBtn.onclick = () => {
+  // Capturar imagen desde el video y renderizar en canvas
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(video, 0, 0);
+  
+  // Convertir a base64
+  const dataURL = canvas.toDataURL('image/png');
 
-    // Tomar foto
-    captureBtn.onclick = () => {
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(video, 0, 0);
-      const dataURL = canvas.toDataURL('image/png');
-      photo.src = dataURL;
-      photo.style.display = 'block';
-      cropBtn.style.display = 'inline-block';
-      scanBtn.style.display = 'none';
-      downloadBtn.style.display = 'none';
-      if (cropper) cropper.destroy();
-      cropper = new Cropper(photo, {
-        aspectRatio: NaN,
-        viewMode: 1,
-      });
-    };
+  // Mostrar imagen capturada en <img>
+  photo.src = dataURL;
+  photo.style.display = 'block';
+  cropBtn.style.display = 'inline-block';
+  scanBtn.style.display = 'none';
+  downloadBtn.style.display = 'none';
+
+  // Esperar que la imagen se cargue completamente antes de usar Cropper
+  photo.onload = () => {
+    if (cropper) cropper.destroy(); // Si ya existía, eliminar el anterior
+    cropper = new Cropper(photo, {
+      aspectRatio: NaN,
+      viewMode: 1,
+    });
+  };
+};
 
     // Recortar
     cropBtn.onclick = () => {
-      const canvasCrop = cropper.getCroppedCanvas();
-      photo.src = canvasCrop.toDataURL();
-      cropper.destroy();
-      cropBtn.style.display = 'none';
-      scanBtn.style.display = 'inline-block';
-      downloadBtn.style.display = 'inline-block';
-    };
+  if (!cropper) {
+    alert("⚠️ No se ha inicializado el recorte.");
+    return;
+  }
+
+  const canvasCrop = cropper.getCroppedCanvas();
+
+  if (canvasCrop) {
+    photo.src = canvasCrop.toDataURL();
+    cropper.destroy();
+    cropper = null;
+    cropBtn.style.display = 'none';
+    scanBtn.style.display = 'inline-block';
+    downloadBtn.style.display = 'inline-block';
+  } else {
+    alert("⚠️ No se pudo obtener la imagen recortada.");
+  }
+};
+
 
     // Aplicar efecto escáner (OpenCV)
     function cvLoaded() {
