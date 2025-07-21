@@ -1,141 +1,43 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <title>Mini Escáner Web</title>
-  <link href="https://unpkg.com/cropperjs/dist/cropper.min.css" rel="stylesheet"/>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Escáner Web</title>
+
+  <!-- Cropper.js CSS -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" rel="stylesheet">
   <style>
-    body { font-family: sans-serif; text-align: center; }
-    video, canvas, img { max-width: 90%; margin: 10px auto; display: block; }
-    button { margin: 5px; padding: 10px; font-size: 16px; }
+    img, video {
+      max-width: 100%;
+    }
+    #editableImage {
+      margin-top: 10px;
+      border: 1px solid #ccc;
+    }
   </style>
 </head>
 <body>
-<img id="photo" style="max-width: 100%; display:none;" />
+  <h2>📸 Escanear Documento desde la Cámara</h2>
 
-  <h1>📷 Escáner Web</h1>
+  <!-- Vista previa de la cámara -->
+  <video id="video" width="320" height="240" autoplay></video>
+  <button id="capture">Tomar Foto</button>
 
-  <!-- Cámara -->
-  <video id="video" width="300" autoplay playsinline></video><br>
-  <button id="capture">📸 Tomar Foto</button>
-
-  <!-- Imagen Capturada -->
-  <canvas id="canvas" style="display: none;"></canvas>
-  <img id="photo" style="max-width: 100%; display:none;" />
-
-  <!-- Botones -->
-  <button id="crop" style="display:none;">✂️ Recortar</button>
-  <button id="scanEffect" style="display:none;">🖨️ Efecto Escáner</button>
-  <button id="download" style="display:none;">⬇️ Descargar JPG</button>
-
-  <!-- Librerías -->
-  <script src="https://unpkg.com/cropperjs"></script>
-<script async src="https://docs.opencv.org/4.x/opencv.js" onload="cvLoaded()"></script>
-
-<script>
-  const video = document.getElementById('video');
-  const canvas = document.getElementById('canvas');
-  const photo = document.getElementById('photo');
-  const captureBtn = document.getElementById('capture');
-  const cropBtn = document.getElementById('crop');
-  const scanBtn = document.getElementById('scanEffect');
-  const downloadBtn = document.getElementById('download');
-
-  let cropper = null;
-
-  // Iniciar cámara trasera si es posible
-  navigator.mediaDevices.getUserMedia({
-    video: { facingMode: { exact: "environment" } }
-  })
-  .then(stream => {
-    video.srcObject = stream;
-  })
-  .catch(err => {
-    console.warn("No se pudo usar la cámara trasera. Usando cámara frontal.", err);
-    navigator.mediaDevices.getUserMedia({ video: true }).then(stream => {
-      video.srcObject = stream;
-    });
-  });
-
-  // Tomar foto
-  captureBtn.onclick = () => {
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    const ctx = canvas.getContext('2d');
-    ctx.drawImage(video, 0, 0);
-
-    const dataURL = canvas.toDataURL('image/png');
-    photo.src = ""; // Limpiar antes de cambiar
-    photo.style.display = "none";
-    cropBtn.style.display = "none";
-    scanBtn.style.display = "none";
-    downloadBtn.style.display = "none";
-
-    if (cropper) {
-      cropper.destroy();
-      cropper = null;
-    }
-
-    // Esperar a que cargue la imagen
-    setTimeout(() => {
-      photo.src = dataURL;
-      photo.onload = () => {
-        photo.style.display = "block";
-        cropper = new Cropper(photo, {
-          aspectRatio: NaN,
-          viewMode: 1,
-        });
-        cropBtn.style.display = "inline-block";
-      };
-    }, 100); // Pequeña espera para asegurar el cambio de src
-  };
-
-  // Recortar imagen
-  cropBtn.onclick = () => {
-    if (!cropper) {
-      alert("⚠️ No se ha inicializado el recorte.");
-      return;
-    }
-
-    const canvasCrop = cropper.getCroppedCanvas();
-
-    if (canvasCrop) {
-      const croppedDataUrl = canvasCrop.toDataURL('image/png');
-      photo.src = croppedDataUrl;
-      photo.onload = () => {
-        cropper.destroy();
-        cropper = null;
-
-        cropBtn.style.display = 'none';
-        scanBtn.style.display = 'inline-block';
-        downloadBtn.style.display = 'inline-block';
-      };
-    } else {
-      alert("⚠️ No se pudo obtener la imagen recortada.");
-    }
-  };
-
-  // Efecto escáner (OpenCV)
-  function cvLoaded() {
-    scanBtn.onclick = () => {
-      let src = cv.imread(photo);
-      let dst = new cv.Mat();
-      cv.cvtColor(src, dst, cv.COLOR_RGBA2GRAY, 0);
-      cv.adaptiveThreshold(dst, dst, 255, cv.ADAPTIVE_THRESH_MEAN_C, cv.THRESH_BINARY, 15, 10);
-      cv.imshow(photo, dst);
-      src.delete(); dst.delete();
-    };
-  }
-
-  // Descargar imagen
-  downloadBtn.onclick = () => {
-    const a = document.createElement('a');
-    a.href = photo.src;
-    a.download = 'escaneado.jpg';
-    a.click();
-  };
-</script>
+  <!-- Imagen recortable -->
+  <img id="editableImage" alt="Imagen capturada" />
+  <button id="guardarRecorte">Guardar Imagen Recortada</button>
 
 
+  <!-- Botón para aplicar filtro tipo escáner -->
+  <button id="scanImage">Aplicar Escaneo</button>
+
+  <!-- Canvas y snapshot finales -->
+  <canvas id="canvas" width="320" height="240" style="display:none;"></canvas>
+  <img id="snapshot" alt="Imagen escaneada" />
+
+  <!-- Scripts -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>
