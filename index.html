@@ -15,14 +15,14 @@
   <h1>📷 Escáner Web</h1>
 
   <!-- Cámara -->
-  <video id="video" width="300" autoplay></video><br>
+  <video id="video" width="300" autoplay playsinline></video><br>
   <button id="capture">📸 Tomar Foto</button>
 
   <!-- Imagen Capturada -->
   <canvas id="canvas" style="display: none;"></canvas>
   <img id="photo" style="max-width: 100%; display:none;" />
 
-  <!-- Recorte -->
+  <!-- Botones -->
   <button id="crop" style="display:none;">✂️ Recortar</button>
   <button id="scanEffect" style="display:none;">🖨️ Efecto Escáner</button>
   <button id="download" style="display:none;">⬇️ Descargar JPG</button>
@@ -42,78 +42,75 @@
 
     let cropper;
 
-    // Iniciar cámara
+    // Iniciar cámara (trasera preferida)
     navigator.mediaDevices.getUserMedia({
-  video: { facingMode: { exact: "environment" } }
-})
-.then(stream => {
-  video.srcObject = stream;
-})
-.catch(err => {
-  console.error("No se pudo acceder a la cámara trasera, usando frontal como respaldo", err);
-  // Respaldo a cámara frontal
-  navigator.mediaDevices.getUserMedia({ video: true }).then(stream => {
-    video.srcObject = stream;
-  });
-});
-
-captureBtn.onclick = () => {
-  // Captura la imagen del video al canvas
-  canvas.width = video.videoWidth;
-  canvas.height = video.videoHeight;
-  const ctx = canvas.getContext('2d');
-  ctx.drawImage(video, 0, 0);
-
-  const dataURL = canvas.toDataURL('image/png');
-
-  // Asignar la imagen al <img id="photo">
-  photo.style.display = 'block';
-  photo.src = dataURL;
-
-  cropBtn.style.display = 'inline-block';
-  scanBtn.style.display = 'none';
-  downloadBtn.style.display = 'none';
-
-  // Esperar a que la imagen se cargue completamente antes de usar Cropper
-  photo.onload = () => {
-    if (cropper) {
-      cropper.destroy();
-      cropper = null;
-    }
-
-    cropper = new Cropper(photo, {
-      aspectRatio: NaN,
-      viewMode: 1,
+      video: { facingMode: { exact: "environment" } }
+    })
+    .then(stream => {
+      video.srcObject = stream;
+    })
+    .catch(err => {
+      console.warn("No se pudo usar la cámara trasera. Usando cámara frontal.", err);
+      navigator.mediaDevices.getUserMedia({ video: true }).then(stream => {
+        video.srcObject = stream;
+      });
     });
-  };
-};
 
+    // Tomar foto
+    captureBtn.onclick = () => {
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(video, 0, 0);
+      const dataURL = canvas.toDataURL('image/png');
 
-   cropBtn.onclick = () => {
-  if (!cropper) {
-    alert("⚠️ No se ha inicializado el recorte.");
-    return;
-  }
+      // Mostrar botones
+      photo.style.display = 'block';
+      cropBtn.style.display = 'inline-block';
+      scanBtn.style.display = 'none';
+      downloadBtn.style.display = 'none';
 
-  const canvasCrop = cropper.getCroppedCanvas();
+      // Usar imagen temporal para forzar carga
+      const tempImage = new Image();
+      tempImage.onload = () => {
+        photo.src = dataURL;
+        photo.onload = () => {
+          if (cropper) {
+            cropper.destroy();
+            cropper = null;
+          }
+          cropper = new Cropper(photo, {
+            aspectRatio: NaN,
+            viewMode: 1,
+          });
+        };
+      };
+      tempImage.src = dataURL;
+    };
 
-  if (canvasCrop) {
-    const croppedDataUrl = canvasCrop.toDataURL('image/png');
-    photo.src = croppedDataUrl;
-    cropper.destroy();
-    cropper = null;
+    // Recortar imagen
+    cropBtn.onclick = () => {
+      if (!cropper) {
+        alert("⚠️ No se ha inicializado el recorte.");
+        return;
+      }
 
-    cropBtn.style.display = 'none';
-    scanBtn.style.display = 'inline-block';
-    downloadBtn.style.display = 'inline-block';
-  } else {
-    alert("⚠️ No se pudo obtener la imagen recortada.");
-  }
-};
+      const canvasCrop = cropper.getCroppedCanvas();
+      if (canvasCrop) {
+        const croppedDataUrl = canvasCrop.toDataURL('image/png');
+        photo.src = croppedDataUrl;
+        cropper.destroy();
+        cropper = null;
 
+        cropBtn.style.display = 'none';
+        scanBtn.style.display = 'inline-block';
+        downloadBtn.style.display = 'inline-block';
+      } else {
+        alert("⚠️ No se pudo obtener la imagen recortada.");
+      }
+    };
 
-
-    // Aplicar efecto escáner (OpenCV)
+    // Aplicar efecto escáner (blanco y negro, tipo documento)
     function cvLoaded() {
       scanBtn.onclick = () => {
         let src = cv.imread(photo);
@@ -125,7 +122,7 @@ captureBtn.onclick = () => {
       };
     }
 
-    // Descargar imagen
+    // Descargar imagen escaneada
     downloadBtn.onclick = () => {
       const a = document.createElement('a');
       a.href = photo.src;
@@ -133,8 +130,6 @@ captureBtn.onclick = () => {
       a.click();
     };
   </script>
-
-  <script src="https://unpkg.com/cropperjs"></script>
 
 </body>
 </html>
